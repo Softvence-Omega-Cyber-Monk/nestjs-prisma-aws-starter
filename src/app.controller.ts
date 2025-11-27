@@ -13,7 +13,7 @@ export class AppController {
   root() {
     return {
       message: 'Welcome to the API 🚀',
-      docs: '/api/docs',
+      docs: 'docs',
     };
   }
 
