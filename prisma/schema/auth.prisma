@@ -1,0 +1,35 @@
+model UserOtp {
+  id String @id @default(uuid())
+
+  code String // hashed OTP
+  type OtpType
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  @@index([userId])
+  @@map("user_otps")
+}
+
+model RefreshToken {
+  id    String @id @default(uuid())
+  token String @unique
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
+  @@map("refresh_tokens")
+}
+
+enum OtpType {
+  VERIFICATION
+  RESET
+}

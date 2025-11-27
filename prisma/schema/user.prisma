@@ -12,22 +12,17 @@ model User {
   isVerified Boolean    @default(false)
 
   // Logout tracking
-  isLoggedIn   Boolean   @default(false)
   lastLoginAt  DateTime?
-  lastLogoutAt DateTime?
   lastActiveAt DateTime?
-
-  // OTP
-  otp          String? // 4 digit hashed OTP code
-  otpExpiresAt DateTime?
-  otpType      OtpType?
 
   // Avatar
   profilePictureId String?
   profilePicture   FileInstance? @relation(fields: [profilePictureId], references: [id], onDelete: SetNull)
 
-  // Notifications
+  // Relations
   notifications UserNotification[]
+  refreshTokens RefreshToken[]
+  otps          UserOtp[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
@@ -45,9 +40,4 @@ enum UserStatus {
   ACTIVE
   INACTIVE
   DELETED
-}
-
-enum OtpType {
-  VERIFICATION // for email verification
-  RESET //for reset password
 }

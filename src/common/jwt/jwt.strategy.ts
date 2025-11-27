@@ -1,9 +1,5 @@
 import { PrismaService } from '@/lib/prisma/prisma.service';
-import {
-  ForbiddenException,
-  Injectable,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
@@ -30,21 +26,16 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
 
     if (!user) {
-      // unauthorized because token refers to no user
       throw new UnauthorizedException('User not found');
     }
 
-    if (!user.isLoggedIn) {
-      throw new ForbiddenException('User is not logged in');
-    }
-
-    // Update lastActiveAt
+    // Update lastActiveAt on each request
     await this.prisma.client.user.update({
       where: { id: payload.sub },
       data: { lastActiveAt: new Date() },
     });
 
-    // return payload — this will be assigned to req.user
+    // Return payload for req.user
     return payload;
   }
 }
