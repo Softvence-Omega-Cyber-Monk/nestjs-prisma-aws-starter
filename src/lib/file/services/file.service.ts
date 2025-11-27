@@ -7,8 +7,8 @@ import * as fs from 'fs';
 import mime from 'mime-types';
 import * as path from 'path';
 import { v4 as uuidv4 } from 'uuid';
-import { PrismaService } from '../prisma/prisma.service';
-import { CreateFileDto } from './dto/create-file.dto';
+import { PrismaService } from '../../prisma/prisma.service';
+import { CreateFileDto } from '../dto/create-file.dto';
 
 @Injectable()
 export class FileService {

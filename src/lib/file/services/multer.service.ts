@@ -1,16 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { MulterOptions } from '@nestjs/platform-express/multer/interfaces/multer-options.interface';
+import { FileType } from '@prisma';
 import { diskStorage } from 'multer';
 import * as path from 'path';
 import { v4 as uuid } from 'uuid';
-
-export enum FileType {
-  IMAGE = 'image',
-  DOCUMENT = 'document',
-  VIDEO = 'video',
-  AUDIO = 'audio',
-  ANY = 'any',
-}
 
 export interface MultipleFileOptions {
   destinationFolder: string;
@@ -21,19 +14,19 @@ export interface MultipleFileOptions {
   customMimeTypes?: string[];
 }
 
-type SupportedFileType = Exclude<FileType, FileType.ANY>;
+type SupportedFileType = Exclude<FileType, 'any'>;
 
 @Injectable()
 export class MulterService {
   private mimeTypesMap: Record<SupportedFileType, string[]> = {
-    [FileType.IMAGE]: [
+    [FileType.image]: [
       'image/jpeg',
       'image/png',
       'image/webp',
       'image/gif',
       'image/svg+xml',
     ],
-    [FileType.DOCUMENT]: [
+    [FileType.document]: [
       'application/pdf',
       'application/msword',
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
@@ -42,31 +35,41 @@ export class MulterService {
       'text/plain',
       'text/csv',
     ],
-    [FileType.VIDEO]: [
+    [FileType.video]: [
       'video/mp4',
       'video/webm',
       'video/ogg',
       'video/avi',
       'video/quicktime',
     ],
-    [FileType.AUDIO]: [
+    [FileType.audio]: [
       'audio/mpeg',
       'audio/ogg',
       'audio/wav',
       'audio/mp3',
       'audio/aac',
     ],
+    [FileType.docs]: [
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'text/plain',
+      'text/csv',
+    ],
+    [FileType.link]: ['text/html', 'text/plain'],
   };
 
-  public createMulterOptions(
+  createMulterOptions(
     destinationFolder: string,
     prefix: string,
-    fileType: FileType = FileType.IMAGE,
+    fileType: FileType = FileType.image,
     fileSizeLimit = 10 * 1024 * 1024,
     customMimeTypes?: string[],
   ): MulterOptions {
     const allowedMimeTypes =
-      fileType === FileType.ANY
+      fileType === FileType.any
         ? null
         : customMimeTypes || this.mimeTypesMap[fileType] || [];
 
@@ -91,20 +94,18 @@ export class MulterService {
     };
   }
 
-  public createMultipleFileOptions(
-    options: MultipleFileOptions,
-  ): MulterOptions {
+  createMultipleFileOptions(options: MultipleFileOptions): MulterOptions {
     const {
       destinationFolder,
       prefix,
-      fileType = FileType.ANY,
+      fileType = FileType.any,
       fileSizeLimit = 10 * 1024 * 1024,
       maxFileCount = 5,
       customMimeTypes,
     } = options;
 
     const allowedMimeTypes =
-      fileType === FileType.ANY
+      fileType === FileType.any
         ? null
         : customMimeTypes || this.mimeTypesMap[fileType] || [];
 

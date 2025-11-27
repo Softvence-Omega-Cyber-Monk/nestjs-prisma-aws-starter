@@ -1,13 +1,5 @@
-import { PaginationDto } from '@/common/dto/pagination.dto';
 import { ENVEnum } from '@/common/enum/env.enum';
 import { AppError } from '@/common/error/handle-error.app';
-import { HandleError } from '@/common/error/handle-error.decorator';
-import {
-  successPaginatedResponse,
-  successResponse,
-  TPaginatedResponse,
-  TResponse,
-} from '@/common/utils/response.util';
 import { PrismaService } from '@/lib/prisma/prisma.service';
 import {
   DeleteObjectCommand,
@@ -47,111 +39,32 @@ export class S3Service {
     });
   }
 
-  @HandleError('Failed to upload file(s)', 'File')
-  async uploadFiles(files: Express.Multer.File[]): Promise<TResponse<any>> {
-    if (!files || files.length === 0) {
-      throw new AppError(404, 'No file(s) uploaded');
-    }
-
-    if (files.length > 5) {
-      throw new AppError(400, 'You can upload a maximum of 5 files');
-    }
-
-    // Parallelize uploads
-    const results = await Promise.all(
-      files.map((file) => this.uploadFile(file)),
-    );
-
-    return successResponse(
-      {
-        files: results,
-        count: results.length,
-      },
-      'Files uploaded successfully',
-    );
-  }
-
-  @HandleError('Failed to delete file(s)', 'File')
-  async deleteFiles(fileIds: string[]): Promise<TResponse<any>> {
-    if (!fileIds || fileIds.length === 0) {
-      throw new AppError(400, 'No file IDs provided');
-    }
-
-    // Fetch files from DB
-    const files = await this.prisma.client.fileInstance.findMany({
-      where: { id: { in: fileIds } },
-    });
-
-    if (!files || files.length === 0) {
-      throw new AppError(400, 'No files found for provided IDs');
-    }
-
-    // Delete from S3
-    await Promise.all(
-      files.map((file) =>
-        this.s3.send(
-          new DeleteObjectCommand({
-            Bucket: this.AWS_S3_BUCKET_NAME,
-            Key: file.path,
-          }),
-        ),
-      ),
-    );
-
-    // Delete from DB
-    await this.prisma.client.fileInstance.deleteMany({
-      where: { id: { in: fileIds } },
-    });
-
-    return successResponse(
-      {
-        files,
-        count: files.length,
-      },
-      'Files deleted successfully',
-    );
-  }
-
-  @HandleError('Failed to get files', 'File')
-  async getFiles(pg: PaginationDto): Promise<TPaginatedResponse<any>> {
-    const page = pg.page && +pg.page > 0 ? +pg.page : 1;
-    const limit = pg.limit && +pg.limit > 0 ? +pg.limit : 10;
-    const skip = (page - 1) * limit;
-
-    const [files, total] = await this.prisma.client.$transaction([
-      this.prisma.client.fileInstance.findMany({
-        take: limit,
-        skip,
-        orderBy: { createdAt: 'desc' },
+  private async uploadBuffer(
+    key: string,
+    buffer: Buffer,
+    mimeType: string,
+  ): Promise<string> {
+    await this.s3.send(
+      new PutObjectCommand({
+        Bucket: this.AWS_S3_BUCKET_NAME,
+        Key: key,
+        Body: buffer,
+        ContentType: mimeType,
       }),
-      this.prisma.client.fileInstance.count(),
-    ]);
+    );
 
-    return successPaginatedResponse(
-      files,
-      {
-        page,
-        limit,
-        total,
-      },
-      'Files found successfully',
+    return `https://${this.AWS_S3_BUCKET_NAME}.s3.${this.AWS_REGION}.amazonaws.com/${key}`;
+  }
+
+  private async deleteObject(key: string) {
+    await this.s3.send(
+      new DeleteObjectCommand({
+        Bucket: this.AWS_S3_BUCKET_NAME,
+        Key: key,
+      }),
     );
   }
 
-  @HandleError('Failed to get file', 'File')
-  async getFileById(id: string): Promise<TResponse<any>> {
-    const file = await this.prisma.client.fileInstance.findUnique({
-      where: { id },
-    });
-
-    if (!file) {
-      throw new AppError(404, 'File not found');
-    }
-
-    return successResponse(file, 'File found successfully');
-  }
-
-  // Private Helpers
   async uploadFile(file: Express.Multer.File) {
     const fileExt = file.originalname.split('.').pop();
     const folder = this.getFolderByMimeType(file.mimetype);
@@ -159,17 +72,7 @@ export class S3Service {
     const s3Key = `${folder}/${uniqueFileName}`;
 
     // Upload to S3
-    const command = new PutObjectCommand({
-      Bucket: this.AWS_S3_BUCKET_NAME,
-      Key: s3Key,
-      Body: file.buffer,
-      ContentType: file.mimetype,
-    });
-
-    await this.s3.send(command);
-
-    // Construct file URL
-    const fileUrl = `https://${this.AWS_S3_BUCKET_NAME}.s3.${this.AWS_REGION}.amazonaws.com/${s3Key}`;
+    const fileUrl = await this.uploadBuffer(s3Key, file.buffer, file.mimetype);
 
     // Save record in database
     const fileRecord = await this.prisma.client.fileInstance.create({
@@ -185,6 +88,22 @@ export class S3Service {
     });
 
     return fileRecord;
+  }
+
+  async deleteFile(id: string) {
+    const file = await this.prisma.client.fileInstance.findUnique({
+      where: { id },
+    });
+
+    if (!file) {
+      throw new AppError(404, 'File not found');
+    }
+
+    await this.deleteObject(file.path);
+
+    await this.prisma.client.fileInstance.delete({
+      where: { id },
+    });
   }
 
   async uploadFileByPath(filePath: string, originalName?: string) {
@@ -231,14 +150,14 @@ export class S3Service {
     return fileRecord;
   }
 
-  private getFolderByMimeType(mimeType: string): string {
+  getFolderByMimeType(mimeType: string): string {
     if (mimeType.startsWith('image/')) return 'images';
     if (mimeType.startsWith('audio/')) return 'audio';
     if (mimeType.startsWith('video/')) return 'videos';
     return 'documents';
   }
 
-  private getFileType(mimeType: string): FileType {
+  getFileType(mimeType: string): FileType {
     if (mimeType.startsWith('image/')) return 'image';
     if (mimeType.startsWith('audio/')) return 'audio';
     if (mimeType.startsWith('video/')) return 'video';
@@ -246,7 +165,7 @@ export class S3Service {
     return 'any';
   }
 
-  private getMimeTypeFromExtension(ext: string): string {
+  getMimeTypeFromExtension(ext: string): string {
     ext = ext.toLowerCase();
     switch (ext) {
       case 'jpg':

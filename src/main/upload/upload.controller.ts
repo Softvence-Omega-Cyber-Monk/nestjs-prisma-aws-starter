@@ -25,14 +25,14 @@ import * as multer from 'multer';
 import { DeleteFilesRequestDto } from './dto/delete-file.dto';
 import { UploadFilesRequestDto } from './dto/upload-file-request.dto';
 import { UploadFilesResponseDto } from './dto/upload-file-response.dto';
-import { S3Service } from './s3.service';
+import { UploadService } from './upload.service';
 
 @ApiBearerAuth()
 @ValidateAuth()
-@ApiTags('Files (S3) & DB')
-@Controller('files')
-export class S3Controller {
-  constructor(private readonly s3Service: S3Service) {}
+@ApiTags('Files Upload')
+@Controller('upload')
+export class UploadController {
+  constructor(private readonly uploadService: UploadService) {}
 
   @Post()
   @ApiOperation({ summary: 'Upload multiple OR single files to S3' })
@@ -58,24 +58,24 @@ export class S3Controller {
       throw new BadRequestException('You can upload a maximum of 5 files');
     }
 
-    return this.s3Service.uploadFiles(files);
+    return this.uploadService.uploadFiles(files);
   }
 
   @Delete()
   @ApiOperation({ summary: 'Delete multiple files from S3' })
   async deleteFiles(@Body() body: DeleteFilesRequestDto) {
-    return this.s3Service.deleteFiles(body.fileIds);
+    return this.uploadService.deleteFiles(body.fileIds);
   }
 
   @Get()
   @ApiOperation({ summary: 'Get all files from S3' })
   async getFiles(@Query() pg: PaginationDto) {
-    return this.s3Service.getFiles(pg);
+    return this.uploadService.getFiles(pg);
   }
 
   @Get(':id')
   @ApiOperation({ summary: 'Get a specific file from S3' })
   async getFileById(@Param('id') id: string) {
-    return this.s3Service.getFileById(id);
+    return this.uploadService.getFileById(id);
   }
 }
