@@ -54,7 +54,7 @@ export class AuthUpdateProfileService {
     });
 
     return successResponse(
-      this.authUtils.sanitizeUser(updatedUser),
+      await this.authUtils.sanitizeUser(updatedUser),
       'Profile updated successfully',
     );
   }

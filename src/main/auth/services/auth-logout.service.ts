@@ -24,7 +24,7 @@ export class AuthLogoutService {
     }
 
     // Delete the provided refresh token (logout)
-    await this.utils.revokeRefreshToken(dto.refreshToken);
+    await this.utils.revokeAllRefreshTokensForUser(userId);
 
     return successResponse(null, 'Logout successful');
   }
