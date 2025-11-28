@@ -2,6 +2,7 @@ node_modules
 dist
 data
 logs
+scripts
 .git
 .vscode
 .vercel
@@ -12,4 +13,8 @@ logs
 .env.production.local
 .pnpm-store
 Dockerfile
+Caddyfile
+Makefile
 docker.yaml
+temp
+uploads

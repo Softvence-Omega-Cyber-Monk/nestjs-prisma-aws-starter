@@ -20,6 +20,39 @@ services:
       timeout: 5s
       retries: 3
 
+  coturn:
+    profiles: ["prod"]
+    image: instrumentisto/coturn:latest
+    container_name: ${PACKAGE_NAME}_coturn
+    restart: always
+    ports:
+      - "3478:3478/tcp"
+      - "3478:3478/udp"
+      - "5349:5349/tcp"
+      - "5349:5349/udp"
+    env_file:
+      - .env
+    environment:
+      - TURN_USERS=${TURN_USERS}
+      - TURN_REALM=${PACKAGE_NAME}_turn
+      - TURN_VERBOSE=1
+      - TURN_LT_CREDENTIALS=1
+      - EXTERNAL_IP=${EXTERNAL_IP}
+    command: >
+      -n
+      --log-file=stdout
+      --min-port=49152
+      --max-port=65535
+      --no-stdout-log
+      --user=${TURN_USERS}
+      --realm=${PACKAGE_NAME}_turn
+      --external-ip=${EXTERNAL_IP}
+    healthcheck:
+      test: ["CMD-SHELL", "nc -zv -w 2 127.0.0.1 3478 || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
   server:
     profiles: ["prod"]
     platform: linux/amd64

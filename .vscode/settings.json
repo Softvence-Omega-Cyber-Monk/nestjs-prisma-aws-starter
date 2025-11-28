@@ -30,10 +30,16 @@
   "prettier.useEditorConfig": true,
   "prettier.resolveGlobalModules": false,
   "cSpell.words": [
+    "appendonly",
     "appleboy",
     "Buildx",
     "Caddyfile",
+    "coturn",
     "healthcheck",
-    "softvence"
+    "instrumentisto",
+    "isready",
+    "replicaof",
+    "softvence",
+    "webrtcuser"
   ]
 }
