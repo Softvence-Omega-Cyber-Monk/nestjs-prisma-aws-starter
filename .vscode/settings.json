@@ -33,6 +33,7 @@
     "appendonly",
     "appleboy",
     "Buildx",
+    "bullmq",
     "Caddyfile",
     "coturn",
     "healthcheck",
