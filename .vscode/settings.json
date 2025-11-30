@@ -35,6 +35,7 @@
     "Buildx",
     "bullmq",
     "Caddyfile",
+    "conv",
     "coturn",
     "healthcheck",
     "instrumentisto",

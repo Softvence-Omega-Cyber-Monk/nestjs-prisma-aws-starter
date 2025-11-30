@@ -21,7 +21,8 @@ import {
   LoadConversationsDto,
   LoadSingleConversationDto,
 } from './dto/conversation.dto';
-import { ConversationService } from './services/conversation.service';
+import { ConversationMutationService } from './services/conversation-mutation.service';
+import { ConversationQueryService } from './services/conversation-query.service';
 
 @WebSocketGateway({
   cors: {
@@ -52,7 +53,8 @@ export class ChatGateway
     private readonly configService: ConfigService,
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
-    private readonly conversationService: ConversationService,
+    private readonly conversationQueryService: ConversationQueryService,
+    private readonly conversationMutationService: ConversationMutationService,
   ) {}
 
   @WebSocketServer()
@@ -183,7 +185,7 @@ export class ChatGateway
   /** ---------------- Conversation Handlers ---------------- */
   @SubscribeMessage(EventsEnum.CONVERSATION_LOAD_LIST)
   async handleLoadConversations(client: Socket, dto: LoadConversationsDto) {
-    return this.conversationService.loadConversations(client, dto);
+    return this.conversationQueryService.loadConversations(client, dto);
   }
 
   @SubscribeMessage(EventsEnum.CONVERSATION_LOAD)
@@ -191,7 +193,7 @@ export class ChatGateway
     client: Socket,
     dto: LoadSingleConversationDto,
   ) {
-    return this.conversationService.loadSingleConversation(client, dto);
+    return this.conversationQueryService.loadSingleConversation(client, dto);
   }
 
   @SubscribeMessage(EventsEnum.CONVERSATION_INITIATE)
@@ -199,26 +201,29 @@ export class ChatGateway
     client: Socket,
     dto: InitConversationWithUserDto,
   ) {
-    return this.conversationService.initiateConversationWithUser(client, dto);
+    return this.conversationMutationService.initiateConversationWithUser(
+      client,
+      dto,
+    );
   }
 
   @SubscribeMessage(EventsEnum.CONVERSATION_DELETE)
   async handleDeleteConversation(client: Socket, dto: ConversationActionDto) {
-    return this.conversationService.deleteConversation(client, dto);
+    return this.conversationMutationService.deleteConversation(client, dto);
   }
 
   @SubscribeMessage(EventsEnum.CONVERSATION_ARCHIVE)
   async handleArchiveConversation(client: Socket, dto: ConversationActionDto) {
-    return this.conversationService.archiveConversation(client, dto);
+    return this.conversationMutationService.archiveConversation(client, dto);
   }
 
   @SubscribeMessage(EventsEnum.CONVERSATION_BLOCK)
   async handleBlockConversation(client: Socket, dto: ConversationActionDto) {
-    return this.conversationService.blockConversation(client, dto);
+    return this.conversationMutationService.blockConversation(client, dto);
   }
 
   @SubscribeMessage(EventsEnum.CONVERSATION_UNBLOCK)
   async handleUnblockConversation(client: Socket, dto: ConversationActionDto) {
-    return this.conversationService.unblockConversation(client, dto);
+    return this.conversationMutationService.unblockConversation(client, dto);
   }
 }

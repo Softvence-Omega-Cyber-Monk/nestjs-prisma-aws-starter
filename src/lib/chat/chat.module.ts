@@ -1,7 +1,8 @@
 import { Global, Module } from '@nestjs/common';
 import { ChatGateway } from './chat.gateway';
 import { CallService } from './services/call.service';
-import { ConversationService } from './services/conversation.service';
+import { ConversationMutationService } from './services/conversation-mutation.service';
+import { ConversationQueryService } from './services/conversation-query.service';
 import { MessageService } from './services/message.service';
 import { WebRTCService } from './services/webrtc.service';
 
@@ -10,7 +11,8 @@ import { WebRTCService } from './services/webrtc.service';
   providers: [
     ChatGateway,
     MessageService,
-    ConversationService,
+    ConversationQueryService,
+    ConversationMutationService,
     CallService,
     WebRTCService,
   ],
