@@ -1,5 +1,5 @@
-import { SocketSafe } from '@/common/decorators/socket-safe.decorator';
 import { EventsEnum } from '@/common/enum/queue-events.enum';
+import { SocketSafe } from '@/common/socket/socket-safe.decorator';
 import { successResponse } from '@/common/utils/response.util';
 import { PrismaService } from '@/lib/prisma/prisma.service';
 import { forwardRef, Inject, Injectable, Logger } from '@nestjs/common';
