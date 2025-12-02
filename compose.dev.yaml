@@ -4,6 +4,7 @@ services:
       context: .
       dockerfile: Dockerfile.dev
     container_name: ${PACKAGE_NAME}_dev_app
+    platform: linux/amd64
     restart: unless-stopped
     env_file:
       - .env

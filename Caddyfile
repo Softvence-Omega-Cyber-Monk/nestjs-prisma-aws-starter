@@ -1,7 +1,7 @@
 api.nestjsstarter.com {
   tls internal # TODO: remove in production
 
-  reverse_proxy /socket.io* server:3000
+  reverse_proxy /socket.io* api:3000
 
   @api {
     not path /socket.io*
@@ -13,7 +13,7 @@ api.nestjsstarter.com {
       max_size 500MB
     }
 
-    reverse_proxy server:3000 {
+    reverse_proxy api:3000 {
       header_up X-Real-IP {remote}
       header_up X-Forwarded-For {remote}
       header_up X-Forwarded-Proto {scheme}

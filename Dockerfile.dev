@@ -27,8 +27,6 @@ COPY nest-cli.json ./
 # Copy source code (src only - clean)
 COPY src ./src
 
-# (DO NOT create dist manually - removed)
-
 # Create uploads and temp folders
 RUN mkdir -p /usr/src/app/uploads /usr/src/app/temp
 

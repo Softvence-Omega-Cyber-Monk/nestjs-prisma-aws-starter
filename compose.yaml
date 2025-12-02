@@ -12,7 +12,7 @@ services:
       - caddy_data:/data
       - caddy_config:/config
     depends_on:
-      server:
+      api:
         condition: service_healthy
     healthcheck:
       test: ['CMD-SHELL', 'caddy validate --config /etc/caddy/Caddyfile']
@@ -23,6 +23,7 @@ services:
   coturn:
     profiles: ['prod']
     image: instrumentisto/coturn:latest
+    platform: linux/amd64
     container_name: ${PACKAGE_NAME}_coturn
     restart: always
     ports:
@@ -53,7 +54,7 @@ services:
       timeout: 5s
       retries: 3
 
-  server:
+  api:
     profiles: ['prod']
     platform: linux/amd64
     image: ${DOCKER_USERNAME}/${PACKAGE_NAME}:${PACKAGE_VERSION}

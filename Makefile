@@ -6,132 +6,135 @@ PACKAGE_VERSION=latest
 # Docker image name
 APP_IMAGE := $(DOCKER_USERNAME)/$(PACKAGE_NAME):$(PACKAGE_VERSION)
 
-# Compose file
+# Compose files
 COMPOSE_FILE := compose.yaml
 DEV_COMPOSE_FILE := compose.dev.yaml
 
-# Dockerfile
+# Docker files
 DOCKERFILE := Dockerfile
 DEV_DOCKERFILE := Dockerfile.dev
 
-.PHONY: help build up upd down restart logs clean push containers volumes networks images dev-services dev-services-down dev-local dev-docker dev-docker-build dev-docker-down dev-docker-logs dev-docker-clean
+.PHONY: help build up start stop restart logs logs-api clean push ps dev-up dev-stop dev-logs dev-clean dev-ps local-up local-down local images volumes networks
 
 help:
 	@echo "Available commands:"
+	@echo ""
+	@echo "Production Commands (Default):"
 	@echo "  make build             Build the Docker image"
-	@echo "  make up                Start containers (attached) - production"
-	@echo "  make upd               Start containers (detached) - production"
-	@echo "  make down              Stop containers"
+	@echo "  make up                Start containers (attached)"
+	@echo "  make start             Start containers (detached)"
+	@echo "  make stop              Stop containers"
 	@echo "  make restart           Restart containers"
-	@echo "  make logs              Show logs of all services"
-	@echo "  make clean             Remove containers, networks, volumes created by compose"
-	@echo "  make push              Push the Docker image to Docker Hub"
-	@echo "  make containers        List containers from compose"
+	@echo "  make logs              Show logs"
+	@echo "  make logs-api          Show API logs"
+	@echo "  make clean             Remove containers, networks, volumes"
+	@echo "  make push              Push image to Docker Hub"
+	@echo "  make ps                List production containers"
+	@echo ""
+	@echo "Development Commands (dev-* - Full Docker):"
+	@echo "  make dev-up            Start full Docker dev environment (detached)"
+	@echo "  make dev-stop          Stop Docker dev environment"
+	@echo "  make dev-logs          Show logs from Docker dev environment"
+	@echo "  make dev-clean         Clean Docker dev environment (remove volumes)"
+	@echo "  make dev-ps            List development containers"
+	@echo ""
+	@echo "Local Development Commands (local-* - Hybrid):"
+	@echo "  make local-up          Start dependencies (DB, Redis) only"
+	@echo "  make local-down        Stop dependencies"
+	@echo "  make local             Start deps and run 'pnpm dev' locally"
+	@echo ""
+	@echo "General / Inspection:"
+	@echo "  make images            List images"
 	@echo "  make volumes           List volumes"
 	@echo "  make networks          List networks"
-	@echo "  make images            List images"
 	@echo ""
-	@echo "Development commands:"
-	@echo "  make dev-services      Start PostgreSQL and Redis for local development"
-	@echo "  make dev-services-down Stop development services"
-	@echo "  make dev-local         Start dev services and run pnpm dev locally"
-	@echo ""
-	@echo "Docker Development (Full Stack with Live Reload):"
-	@echo "  make dev-docker        Start full Docker dev environment with live reload"
-	@echo "  make dev-docker-build  Rebuild and start Docker dev environment"
-	@echo "  make dev-docker-down   Stop Docker dev environment"
-	@echo "  make dev-docker-logs   Show logs from Docker dev environment"
-	@echo "  make dev-docker-clean  Clean Docker dev environment (remove volumes)"
 
-# Build the Docker image
+# ==========================================
+# Production Commands (Default)
+# ==========================================
+
 build:
 	docker build -t $(APP_IMAGE) .
 
-# Start containers (attached) - production
 up:
 	docker compose -f $(COMPOSE_FILE) --profile prod up --remove-orphans
 
-# Start containers (detached) - production
-upd:
+start:
 	docker compose -f $(COMPOSE_FILE) --profile prod up -d
 
-# Stop containers
-down:
+stop:
 	docker compose -f $(COMPOSE_FILE) --profile prod down
 
-# Restart containers
 restart:
 	docker compose -f $(COMPOSE_FILE) --profile prod restart
-	docker compose -f $(COMPOSE_FILE) --profile prod up
+	docker compose -f $(COMPOSE_FILE) --profile prod up -d
 
-# Logs
 logs:
-	docker compose -f $(COMPOSE_FILE) logs -f
+	docker compose -f $(COMPOSE_FILE) --profile prod logs -f
 
-# Cleanup
+logs-api:
+	docker compose -f $(COMPOSE_FILE) --profile prod logs -f api
+
 clean:
 	docker compose -f $(COMPOSE_FILE) --profile prod down --volumes --remove-orphans
 	docker rmi $(APP_IMAGE) || true
 
-# List containers
-containers:
-	docker compose -f $(COMPOSE_FILE) ps
-
-# List volumes
-volumes:
-	docker volume ls
-
-# List networks
-networks:
-	docker network ls
-
-# List images
-images:
-	docker images
-
-# Push image
 push:
 	docker push $(APP_IMAGE)
 
-# Development commands
-# Start development services (PostgreSQL and Redis only)
-dev-services:
+ps:
+	docker compose -f $(COMPOSE_FILE) --profile prod ps -a
+
+# ==========================================
+# Development Commands (Full Docker)
+# ==========================================
+
+dev-up:
+	docker compose -f $(DEV_COMPOSE_FILE) up -d
+
+dev-stop:
+	docker compose -f $(DEV_COMPOSE_FILE) down
+
+dev-logs:
+	docker compose -f $(DEV_COMPOSE_FILE) logs -f
+
+dev-clean:
+	docker compose -f $(DEV_COMPOSE_FILE) down --volumes --remove-orphans
+
+dev-ps:
+	docker compose -f $(DEV_COMPOSE_FILE) ps -a
+
+# ==========================================
+# Local Development Commands (Hybrid)
+# ==========================================
+
+local-up:
 	docker compose -f $(COMPOSE_FILE) --profile dev up -d
 
-# Stop development services
-dev-services-down:
+local-down:
 	docker compose -f $(COMPOSE_FILE) --profile dev down
 
-# Run local dev (without docker for api)
-dev-local:
+local:
 	@echo "Starting development services..."
-	@$(MAKE) dev-services
+	@$(MAKE) local-up
 	@echo "Waiting for services to be ready..."
 	@sleep 3
+	@echo "Installing dependencies..."
+	pnpm install
+	@echo "Database migrations..."
+	npx prisma migrate deploy
 	@echo "Starting application in development mode..."
 	pnpm dev
 
-# Docker Development (Full Stack with Live Reload)
-# Start full Docker dev environment with live reload
-dev-build:
-	docker compose -f $(DEV_COMPOSE_FILE) build
+# ==========================================
+# General / Inspection
+# ==========================================
 
-dev-docker:
-	docker compose -f $(DEV_COMPOSE_FILE) up
+images:
+	docker images
 
-# Rebuild and start Docker dev environment
-dev-docker-build:
-	docker compose -f compose.dev.yaml up --build
+volumes:
+	docker volume ls
 
-# Stop Docker dev environment
-dev-docker-down:
-	docker compose -f compose.dev.yaml down
-
-# Show logs from Docker dev environment
-dev-docker-logs:
-	docker compose -f compose.dev.yaml logs -f
-
-# Clean Docker dev environment (remove volumes)
-dev-docker-clean:
-	docker compose -f compose.dev.yaml down --volumes --remove-orphans
-
+networks:
+	docker network ls
