@@ -1,0 +1,12 @@
+{
+  "*.{js,ts,jsx,tsx}": [
+    "pnpm lint:fix",
+    "pnpm format:fix",
+    "pnpm commitlint",
+    "pnpm db:validate",
+    "pnpm build"
+  ],
+  "*.{json,md}": [
+    "pnpm format:fix"
+  ]
+}

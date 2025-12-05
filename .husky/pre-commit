@@ -1,1 +1,1 @@
-node ./scripts/ci-hooks.js
+npx lint-staged
