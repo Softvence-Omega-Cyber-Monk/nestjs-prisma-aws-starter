@@ -1,61 +1,90 @@
 import { Injectable, NestMiddleware } from '@nestjs/common';
-import chalk from 'chalk';
 import { NextFunction, Request, Response } from 'express';
-
-function safeStringify(obj: unknown): string {
-  try {
-    return JSON.stringify(obj, null, 2);
-  } catch {
-    return '[Unable to stringify]';
-  }
-}
+import * as winston from 'winston';
+import 'winston-daily-rotate-file';
 
 @Injectable()
 export class LoggerMiddleware implements NestMiddleware {
-  use(req: Request, res: Response, next: NextFunction) {
-    const startTime = Date.now();
-    const { method, originalUrl, body, query, params } = req;
+  private logger: winston.Logger;
 
-    // Capture original methods
+  constructor() {
+    const logFormat = winston.format.printf(({ timestamp, level, message }) => {
+      return `${timestamp} [${level}] ${message}`;
+    });
+
+    this.logger = winston.createLogger({
+      level: 'info',
+      format: winston.format.combine(
+        winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+        logFormat,
+      ),
+      transports: [
+        new winston.transports.Console({
+          format: winston.format.combine(
+            winston.format.colorize(),
+            winston.format.simple(),
+          ),
+        }),
+        new winston.transports.DailyRotateFile({
+          filename: 'logs/application-%DATE%.log',
+          datePattern: 'YYYY-MM-DD',
+          zippedArchive: true,
+          maxSize: '20m',
+          maxFiles: '14d',
+          dirname: 'logs',
+        }),
+        new winston.transports.DailyRotateFile({
+          filename: 'logs/error-%DATE%.log',
+          datePattern: 'YYYY-MM-DD',
+          zippedArchive: true,
+          maxSize: '20m',
+          maxFiles: '14d',
+          level: 'error',
+          dirname: 'logs',
+        }),
+      ],
+    });
+  }
+
+  use(req: Request, res: Response, next: NextFunction) {
+    const { method, originalUrl, body, query, params } = req;
+    const startTime = Date.now();
+
     const oldJson = res.json.bind(res);
     const oldSend = res.send.bind(res);
 
-    // Helper to log only error responses
-    const logError = (responseBody: unknown) => {
-      if (res.statusCode >= 400) {
-        const duration = Date.now() - startTime;
+    const logResponse = (responseBody: unknown) => {
+      const duration = Date.now() - startTime;
+      const statusCode = res.statusCode;
 
-        console.group(chalk.bgRed.white.bold('❌ Error Response'));
-        console.info(`${chalk.cyan('🔗 URL:')} ${chalk.white(originalUrl)}`);
-        console.info(`${chalk.yellow('📬 Method:')} ${chalk.white(method)}`);
-        console.info(
-          `${chalk.magenta('📥 Request Body:')} ${chalk.gray(safeStringify(body))}`,
+      const logMessage = `[${method}] ${originalUrl} - Status: ${statusCode} - Duration: ${duration}ms`;
+      const logDetails = {
+        method,
+        url: originalUrl,
+        statusCode,
+        duration,
+        body,
+        query,
+        params,
+        responseBody: statusCode >= 400 ? responseBody : undefined, // Log response body only on error to save space
+      };
+
+      if (statusCode >= 400) {
+        this.logger.error(
+          `${logMessage} - Details: ${JSON.stringify(logDetails)}`,
         );
-        console.info(
-          `${chalk.magenta('🔍 Query Params:')} ${chalk.gray(safeStringify(query))}`,
-        );
-        console.info(
-          `${chalk.magenta('⚙️ Route Params:')} ${chalk.gray(safeStringify(params))}`,
-        );
-        console.info(`${chalk.green('📨 Status Code:')} ${res.statusCode}`);
-        console.info(
-          `${chalk.cyan('📦 Response Body:')} ${chalk.gray(safeStringify(responseBody))}`,
-        );
-        console.info(`${chalk.blue('🕒 Response Time:')} ${duration} ms`);
-        console.groupEnd();
-        console.info(chalk.gray('-'.repeat(60)));
+      } else {
+        this.logger.info(logMessage);
       }
     };
 
-    // Override res.json
     res.json = (data: unknown) => {
-      logError(data);
+      logResponse(data);
       return oldJson(data);
     };
 
-    // Override res.send (for non-json responses)
     res.send = (data: unknown) => {
-      logError(data);
+      logResponse(data);
       return oldSend(data);
     };
 
