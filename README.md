@@ -45,7 +45,9 @@ A production-ready, feature-rich starter template for building scalable backend 
 ### Developer Experience
 
 - **Husky** - Git hooks made easy
+- **Commitizen** - Interactive commit generator
 - **Commitlint** - Lint commit messages
+- **Semantic Release** - Automated versioning and changelogs
 - **Lint Staged** - Run linters on staged files
 - **ESLint + Prettier** - Automated linting and formatting
 - **CI/CD** - GitHub Actions workflow
@@ -54,7 +56,7 @@ A production-ready, feature-rich starter template for building scalable backend 
 
 ## 📁 Project Structure
 
-```
+```text
 ├── .github/workflows/     # CI/CD configuration
 ├── .husky/               # Git hooks
 ├── prisma/
@@ -150,7 +152,7 @@ AWS_SECRET_ACCESS_KEY=test
 AWS_S3_BUCKET_NAME=test
 ```
 
-### Local Development (Hybrid)
+### Local Development (Hybrid) Setup
 
 Start dependencies (DB + Redis) in Docker, run app locally:
 
@@ -251,6 +253,7 @@ pnpm format           # Check formatting
 pnpm format:fix       # Fix formatting
 pnpm ci:check         # Run all CI checks
 pnpm ci:fix           # Fix all CI issues
+pnpm commit           # Interactively generate commit message (recommended)
 
 # Database
 pnpm prisma           # Prisma CLI
@@ -282,6 +285,12 @@ GitHub Actions workflow (`.github/workflows/ci-cd.yml`):
    - SSH into VPS
    - Pull and restart containers
 
+4. **Release** (Automated)
+   - Analyzes commits via Semantic Release
+   - Bumps version (package.json)
+   - Generates CHANGELOG.md
+   - Publishes GitHub Release
+
 ## 🐳 Docker Architecture
 
 ### Production (`compose.yaml`)
@@ -310,12 +319,21 @@ GitHub Actions workflow (`.github/workflows/ci-cd.yml`):
 
 ### Pre-commit Hooks
 
-### Pre-commit Hooks
-
 Husky triggers `lint-staged` and `commitlint` on commit:
 
 - **Lint Staged**: Runs `eslint` and `prettier` on staged files to ensure code quality before it's committed.
-- **Commitlint**: Enforces conventional commit message format (e.g., `feat: add new feature`).
+- **Commitlint**: Enforces conventional commit message format.
+
+### Commit Guidelines
+
+We use **Conventional Commits**. The easiest way to commit is:
+
+```bash
+pnpm commit
+```
+
+This triggers an interactive prompt (`commitizen`) to help you create a valid commit message.
+Alternatively, ensure your commits follow the format: `type(scope): subject` (e.g., `feat: add new login page`).
 
 ### Linting & Formatting
 
@@ -353,4 +371,4 @@ UNLICENSED - Private/Commercial use
 
 ---
 
-**Built with ❤️ using NestJS, Prisma, and Docker**
+Built with ❤️ using NestJS, Prisma, and Docker
