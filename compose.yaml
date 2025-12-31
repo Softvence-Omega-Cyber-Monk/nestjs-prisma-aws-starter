@@ -9,6 +9,7 @@ services:
       - '443:443'
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile
+      - /var/www/html:/var/www/html
       - caddy_data:/data
       - caddy_config:/config
     depends_on:
@@ -115,6 +116,23 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: ${PACKAGE_NAME}_pgadmin
+    restart: always
+    profiles: ['prod']
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=${SUPER_ADMIN_EMAIL}
+      - PGADMIN_DEFAULT_PASSWORD=${SUPER_ADMIN_PASS}
+      - SCRIPT_NAME=/pgadmin
+    ports:
+      - '8123:80'
+    depends_on:
+      db:
+        condition: service_healthy
+      api:
+        condition: service_healthy
 
   redis-master:
     profiles: ['dev', 'prod']

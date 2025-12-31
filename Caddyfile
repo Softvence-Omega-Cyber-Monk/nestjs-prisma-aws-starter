@@ -1,10 +1,20 @@
-api.nestjsstarter.com {
+api.nest.com {
   tls internal # TODO: remove in production
+
+  handle /pgadmin* {
+    reverse_proxy pgadmin:80 {
+      header_up X-Real-IP {remote}
+      header_up X-Forwarded-For {remote}
+      header_up X-Forwarded-Proto {scheme}
+      header_up X-Script-Name /pgadmin
+    }
+  }
 
   reverse_proxy /socket.io* api:3000
 
   @api {
     not path /socket.io*
+    not path /pgadmin*
   }
 
   handle @api {
@@ -20,4 +30,16 @@ api.nestjsstarter.com {
       header_up Host {host}
     }
   }
+}
+
+nest.com {
+  tls internal # TODO: remove in production
+
+  root * /var/www/html/dist
+  try_files {path} /index.html
+  file_server
+  header {
+    Cache-Control "public, max-age=31536000, immutable"
+  }
+  encode gzip
 }
