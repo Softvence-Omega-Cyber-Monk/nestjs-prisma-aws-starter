@@ -289,10 +289,11 @@ export class S3Service {
     video1: string,
     video2: string,
   ): Promise<{ jobId: string; outputUrl: string }> {
-    const outputName = `merged-${uuid()}.mp4`;
+    const outputName = `merged-${uuid()}`;
     const s3Destination = `s3://${this.AWS_S3_BUCKET_NAME}/merged/`;
 
-    // Use InputClippings to stitch videos sequentially
+    const video1Filename = video1.split('/').pop()?.replace('.mp4', '') || '';
+
     const inputs = [
       {
         FileInput: video1,
@@ -314,12 +315,9 @@ export class S3Service {
       },
     ];
 
-    // Reference the audio selector from the first input
-    // Note: When merging sequentially, only the first input's audio is typically used
-    // unless you configure input stitching differently
     const audioDescriptions = [
       {
-        AudioSourceName: 'Audio Selector 1', // This references the selector from Input 1
+        AudioSourceName: 'Audio Selector 1',
         CodecSettings: {
           Codec: AudioCodec.AAC,
           AacSettings: {
@@ -372,9 +370,11 @@ export class S3Service {
       throw new AppError(500, 'Failed to create merge job');
     }
 
+    const actualOutputFilename = `${video1Filename}${outputName}.mp4`;
+
     return {
       jobId: result.Job.Id,
-      outputUrl: `https://${this.AWS_S3_BUCKET_NAME}.s3.${this.AWS_REGION}.amazonaws.com/merged/${outputName}`,
+      outputUrl: `https://${this.AWS_S3_BUCKET_NAME}.s3.${this.AWS_REGION}.amazonaws.com/merged/${actualOutputFilename}`,
     };
   }
 
